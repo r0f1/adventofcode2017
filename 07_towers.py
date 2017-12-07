@@ -1,5 +1,4 @@
-import networkx
-
+from collections import Counter
 nodes = {}
 
 with open("07_input.txt") as f:
@@ -23,22 +22,26 @@ for name, values in nodes.items():
 		for n in values["neighbors"]:
 			is_root.discard(n)
 
-print(is_root) # Part One
+print(list(is_root)[0]) # Part One
 
-def real_weight(nodes, node):
-	if len(node["neighbors"]) == 0:
-		return node["weight"]
-	else:
-		return sum(real_weight(nodes, nodes[x]) for x in node["neighbors"])
+def tower_weight(nodes, node):
+	return node["weight"] + sum(tower_weight(nodes, nodes[x]) for x in node["neighbors"])
 
-for node in nodes.values():
-	if len(set(real_weight(nodes, nodes[x]) for x in node["neighbors"])) > 1:
-		print([real_weight(nodes, nodes[x]) for x in node["neighbors"]])
+is_imba = set()
+for name, node in nodes.items():
+	if len(set([tower_weight(nodes, nodes[x]) for x in node["neighbors"]])) > 1:
+		is_imba.add(name)
 
+fixme = None
+for name in is_imba:
+	if not any(x in is_imba for x in nodes[name]["neighbors"]):
+		fixme = name
+		break
 
-# G = networkx.Graph(list(nodes.keys()))
-# for n in nodes:
-# 	for nei in n["neighbors"]:
-# 		G.add_edge((nei, n["name"]))
-
-# print(G)
+counter = Counter(tower_weight(nodes, nodes[name]) for name in nodes[fixme]["neighbors"])
+weights = sorted(counter.most_common())
+delta_weight = weights[1][0] - weights[0][0]
+for name in nodes[fixme]["neighbors"]:
+	if tower_weight(nodes, nodes[name]) == weights[1][0]:
+		print(nodes[name]["weight"] - delta_weight) # Part Two
+		break
