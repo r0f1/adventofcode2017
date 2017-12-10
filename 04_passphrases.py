@@ -1,6 +1,6 @@
 count = 0
 count2 = 0
-with open("04_input.txt", "r") as f:
+with open("04_input.txt") as f:
 	for l in f:
 		chunks = l.split()
 		r = len(chunks)
