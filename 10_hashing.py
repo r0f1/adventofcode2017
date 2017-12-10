@@ -4,8 +4,7 @@ def reversed_part(m, curr, p):
         n = m[curr:] + m[:end-len(m)]
     else:
         n = m[curr:end]    
-    n.reverse()
-    return n
+    return reversed(n)
 
 def alter_list(m, n, curr):
     for e in n:
