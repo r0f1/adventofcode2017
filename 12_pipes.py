@@ -1,8 +1,5 @@
 from collections import defaultdict
-from pprint import pprint
-
 import scipy.sparse
-import numpy as np
 
 adj_list = defaultdict(list)
 
