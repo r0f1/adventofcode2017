@@ -1,4 +1,5 @@
 from functools import reduce
+from itertools import product
 import operator
 import scipy.sparse
 
@@ -36,6 +37,20 @@ def new_hashing(inputstr):
     long_hash = [bin(int(c,16))[2:].zfill(4) for x in dense_hash for c in x]
     return "".join(str(x) for x in long_hash)
 
+def get_neighbors(data, x, y, size):
+    if data[y][x] == 0: return [size**2-1]
+
+    res = []
+    if y > 0: 
+        if data[y-1][x] == 1: res.append(x+(y-1)*(size-1))
+    if y < len(data)-1:
+        if data[y+1][x] == 1: res.append(x+(y+1)*(size-1))
+    if x > 0:
+        if data[y][x-1] == 1: res.append(x-1+y*(size-1))
+    if x < len(data)-1:
+        if data[y][x+1] == 1: res.append(x+1+y*(size-1))
+    return res
+
 puzzle_input = "vbqugkhl"
 
 data = []
@@ -48,13 +63,17 @@ for i in range(128):
 
 print(res) # Part One
 
-converted_data = []
-for y, line in enumerate(data):
-    for x, p in enumerate(line):
-        pass
+size = 129
 
+row = []
+col = []
 
-mat = scipy.sparse.csr_matrix(data, (128, 128))
+for i, (y, x) in enumerate(product(range(size-1), range(size-1))):
+    ns = get_neighbors(data, x, y, size)
+    for n in ns: 
+        row.append(i)
+        col.append(n)
+
+mat = scipy.sparse.csr_matrix(([1]*len(row), (row, col)), shape=(size**2, size**2))
 n_components, labels = scipy.sparse.csgraph.connected_components(mat, directed=False)
-print(n_components) # Part Two
-
+print(max(labels[:128**2])) # Part Two
