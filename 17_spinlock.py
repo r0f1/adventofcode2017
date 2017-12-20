@@ -8,4 +8,11 @@ for i in range(1, 2018):
 
 print(l[l.index(2017)+1])
 
-##50000000
+after_zero = 0
+pos = 0
+for i in range(1, 50_000_001):
+	pos = ((pos + puzzle_input) % i) + 1
+	if pos == 1:
+		after_zero = i
+
+print(after_zero)
