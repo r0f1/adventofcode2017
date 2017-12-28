@@ -1,80 +1,70 @@
-from collections import Counter
+import numpy as np
 
-def pairs(it):
-    try:
-        while True:
-            yield "%s%s" % (next(it), next(it))
-    except StopIteration:
-        pass
+def transform(pd, p):
+    size = int(len(p)**0.5)
+    if size in (2,3):
+        return pd[p]
+    
+    if size % 2 == 0:
+        s = 2
+    else: 
+        s = 3
 
-def to_cols(p):
-    if len(p) == 5:
-        line1, line2 = p.split("/")
-        return line1[0]+line2[0], line1[1]+line2[1]
-    else:
-        line1, line2, line3 = p.split("/")
-        return line1[0]+line2[0]+line3[0], line1[1]+line2[1]+line3[1], line1[2]+line2[2]+line3[2]
+    arr = np.array(p).reshape(size, size)
+    lines = []
+    for h in np.hsplit(arr, size // s):
+        res = []
+        for v in np.vsplit(h, size // s):
+            t = transform(pd, tuple(v.flatten()))
+            res.append(t)
+        nd = int(len(t)**0.5)
+        lines.append(np.concatenate(res, axis=0).reshape(len(res)*nd, nd))
 
+    return tuple(np.concatenate(lines, axis=1).flatten())
 
-def rotate_flip_pattern(p):
-    res = []
-    res.append(p.replace("/", ""))
-    if len(p) == 5:
-        line1, line2 = p.split("/")
-        col1, col2 = to_cols(p)
-        res.append("%s%s" % (line2, line1))
-        res.append("%s%s" % (line1[::-1], line2[::-1]))
-        res.append("%s%s" % (col1[::-1], col2[::-1]))
-        res.append("%s%s" % (line2[::-1], line1[::-1]))
-        res.append("%s%s" % (col2, col1))
-    else:
-        line1, line2, line3 = p.split("/")
-        col1, col2, col3 = to_cols(p)
-        res.append("%s%s%s" % (line3, line2, line1))
-        res.append("%s%s%s" % (line1[::-1], line2[::-1], line3[::-1]))
-        res.append("%s%s%s" % (col1[::-1], col2[::-1], col3[::-1]))
-        res.append("%s%s%s" % (line3[::-1], line2[::-1], line1[::-1]))
-        res.append("%s%s%s" % (col3, col2, col1))
-    return res #set(res)
+class Pattern(object):
+    def __init__(self, inpattern, outpattern):
+        arr = np.array(self._convert(inpattern))
+        if len(arr) == 4:
+            arr = np.reshape(arr, (2,2))
+        else:
+            arr = np.reshape(arr, (3,3))
+        self.patterns = [tuple(a.flatten()) for a in self._rotate_flip_pattern(arr)]
+        self.outpattern = tuple(self._convert(outpattern))
 
-def transform(patterns, p):
-    size = int(len(p.replace("/", "")) ** 0.5)
-    if size == 3:
-        return patterns[p]
+    def _convert(self, p):
+        return [1 if c == "#" else 0 for c in p.replace("/", "")]
 
-    #   transformed = []
-    #   if size % 2 == 0:
-    #       lines = iter(p.split("/"))
-    #       for _ in range(size):
-    #           chunks = []
-    #           line1 = next(lines)
-    #           chunks.append([a] for a in pairs(line1))
-    #           line2 = next(lines)
-    #           for i, a in pairs(line2):
-    #               chunks[i] += "/" + a
-    #           for c in chunks:
-    #               transformed.append(patters[c])
-    #       print(transformed)
-    #       raise Exception()
-    #   else:
-    #       pass
+    def _rotate(self, arr):
+        return [np.rot90(arr, 1), np.rot90(arr, 2), np.rot90(arr, 3)]
 
+    def _flip(self, arr):
+        return [np.flipud(arr), np.fliplr(arr)]
 
-patterns = {} 
+    def _rotate_flip_pattern(self, p):
+        p1, p2 = self._flip(p)
+        return [p] + self._rotate(p) + [p1, p2] + self._rotate(p1) + self._rotate(p2)
+
+pattern_dict = {} 
 
 with open("21_input.txt") as f:
     for line in f:
-        p1, p2 = [p.strip() for p in line.split(" => ")]
-        # if p1 == ".##/#.#/#..":
-        #     print(rotate_flip_pattern(p1))
-        for p in rotate_flip_pattern(p1):
-            patterns[p] = p2
+        pat = Pattern(*[p.strip() for p in line.split(" => ")])
+        for p in pat.patterns:
+            pattern_dict[p] = pat.outpattern
 
-assert len(patterns) == (2**4 + 2**9)
-print(len(patterns))
+assert len(pattern_dict) == (2**4 + 2**9)
 
-# p = ".#...####"
-# for _ in range(5):
-#     p = transform(patterns, p)
+p = (0,1,0,0,0,1,1,1,1)
+for _ in range(5):
+    p = transform(pattern_dict, p)
+    # s = int(len(p)**0.5)
+    # arr = np.array(p).reshape(s,s)
+    # print(arr)
 
-# print(Counter(p)["#"])
+print(sum(p))
+
+for _ in range(13):
+    p = transform(pattern_dict, p)
+
+print(sum(p))
